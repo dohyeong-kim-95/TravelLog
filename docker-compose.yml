@@ -1,0 +1,37 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
+      DATA_DIR: /data
+      USER1_NAME: ${USER1_NAME:-나}
+      USER1_PASS: ${USER1_PASS:-pass1}
+      USER2_NAME: ${USER2_NAME:-여친}
+      USER2_PASS: ${USER2_PASS:-pass2}
+    volumes:
+      - db_data:/data
+    networks:
+      - internal
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    networks:
+      - internal
+
+volumes:
+  db_data:
+
+networks:
+  internal:

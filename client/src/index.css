@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Nunito:wght@400;600;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Colors */
+  --color-primary: #60A5FA;
+  --color-primary-dark: #3B82F6;
+  --color-secondary: #4ADE80;
+  --color-secondary-dark: #22C55E;
+  --color-tertiary: #FBBF24;
+  --color-error: #F87171;
+  --color-error-dark: #EF4444;
+
+  /* User colors */
+  --user1-color: #60A5FA;
+  --user1-fill: #BFDBFE;
+  --user2-color: #F472B6;
+  --user2-fill: #FCE7F3;
+  --both-color: #A78BFA;
+  --both-fill: #EDE9FE;
+
+  /* Surface */
+  --surface-base: #FFFFF0;
+  --surface-card: #FFFFFF;
+
+  /* Text */
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+
+  /* Borders */
+  --border-default: #E5E7EB;
+  --border-strong: #A1A1AA;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 3px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.10);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Typography */
+  --font-headline: 'Patrick Hand', cursive;
+  --font-body: 'Nunito', sans-serif;
+}
+
+html, body {
+  height: 100%;
+  background-color: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+#root {
+  height: 100%;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-headline);
+  font-weight: 400;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 600;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+input {
+  font-family: var(--font-body);
+  font-size: 18px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-default);
+  padding: 12px 16px;
+  background: white;
+  color: var(--text-primary);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:hover {
+  border-color: var(--border-strong);
+}
+
+input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+}
+
+input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 99px;
+}

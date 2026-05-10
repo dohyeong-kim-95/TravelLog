@@ -1,0 +1,266 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--surface-base);
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-xl);
+  background: white;
+  border-bottom: 2px dashed var(--border-default);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  gap: var(--space-md);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.logo {
+  font-size: 28px;
+}
+
+.title {
+  font-family: var(--font-headline);
+  font-size: 26px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.onlineStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.online {
+  background: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.offline {
+  background: #D1D5DB;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.3); }
+  50%       { box-shadow: 0 0 0 5px rgba(74, 222, 128, 0.1); }
+}
+
+.statusLabel {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.logoutBtn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 2px dashed var(--border-default);
+  padding: 8px 18px;
+  font-size: 15px;
+  border-radius: var(--radius-md);
+}
+
+.logoutBtn:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  background: #FFF5F5;
+}
+
+/* Main layout */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  padding: var(--space-md);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  border-right: 2px dashed var(--border-default);
+  background: var(--surface-base);
+}
+
+.card {
+  background: white;
+  border: 2px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s;
+}
+
+.card:hover {
+  border-color: var(--color-primary);
+}
+
+.cardLabel {
+  font-family: var(--font-headline);
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-sm);
+}
+
+.userBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 2px solid;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.legendSwatch {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  font-size: 15px;
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.legendCount {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Stats */
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.statIcon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: var(--space-xs) 0;
+}
+
+/* Help card */
+.helpCard {
+  background: #FEF9C3;
+  border-color: var(--color-tertiary);
+}
+
+.helpCard:hover {
+  border-color: #F59E0B;
+}
+
+.helpText {
+  font-size: 14px;
+  color: #854D0E;
+  line-height: 1.6;
+}
+
+/* Map area */
+.mapSection {
+  flex: 1;
+  overflow: hidden;
+  padding: var(--space-md);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: unset;
+    border-right: none;
+    border-bottom: 2px dashed var(--border-default);
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow-x: auto;
+    padding: var(--space-sm);
+  }
+
+  .card {
+    min-width: 200px;
+    flex: 1;
+  }
+
+  .mapSection {
+    flex: 1;
+    min-height: 400px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+}

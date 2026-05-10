@@ -1,0 +1,26 @@
+{
+  "name": "travellog",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "generate-map": "node scripts/generate-korea-map.mjs",
+    "dev:server": "cd server && node --watch index.js",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:42869/git/dohyeong-kim-95/TravelLog"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@geo-maps/countries-coastline-1m": "^0.6.0",
+    "@turf/turf": "^7.3.5",
+    "d3-delaunay": "^6.0.4"
+  }
+}
