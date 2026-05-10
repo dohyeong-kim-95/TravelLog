@@ -1,33 +1,24 @@
 import { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase.js';
 import Login from './components/Login.jsx';
 import MapView from './components/MapView.jsx';
-import { socket } from './socket.js';
 
 export default function App() {
-  const [user, setUser] = useState(null); // { username, slot }
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(undefined); // undefined = loading
 
   useEffect(() => {
-    fetch('/api/me', { credentials: 'include' })
-      .then(r => (r.ok ? r.json() : null))
-      .then(data => {
-        if (data?.username) setUser(data);
-      })
-      .finally(() => setLoading(false));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = (userData) => {
-    setUser(userData);
-    socket.connect();
-  };
-
-  const handleLogout = () => {
-    fetch('/api/logout', { method: 'POST', credentials: 'include' });
-    socket.disconnect();
-    setUser(null);
-  };
-
-  if (loading) {
+  if (session === undefined) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <p style={{ fontFamily: 'var(--font-headline)', fontSize: 24, color: 'var(--text-secondary)' }}>
@@ -37,9 +28,15 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    return <Login onLogin={handleLogin} />;
-  }
+  if (!session) return <Login />;
 
-  return <MapView user={user} onLogout={handleLogout} />;
+  const meta = session.user.user_metadata ?? {};
+  const user = {
+    id: session.user.id,
+    email: session.user.email,
+    slot: meta.slot ?? 1,
+    displayName: meta.display_name ?? session.user.email,
+  };
+
+  return <MapView user={user} />;
 }

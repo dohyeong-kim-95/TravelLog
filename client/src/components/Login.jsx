@@ -1,35 +1,25 @@
 import { useState } from 'react';
+import { supabase } from '../lib/supabase.js';
 import styles from './Login.module.css';
 
-export default function Login({ onLogin }) {
-  const [username, setUsername] = useState('');
+export default function Login() {
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || '로그인 실패');
-      } else {
-        onLogin(data);
-      }
-    } catch {
-      setError('서버에 연결할 수 없어요 😢');
-    } finally {
-      setLoading(false);
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (authError) {
+      setError('이메일 또는 비밀번호가 틀렸습니다 😢');
     }
+    // success: onAuthStateChange in App.jsx will handle the redirect
+    setLoading(false);
   };
 
   return (
@@ -41,12 +31,12 @@ export default function Login({ onLogin }) {
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
-            <label className={styles.label}>이름</label>
+            <label className={styles.label}>이메일</label>
             <input
-              type="text"
-              placeholder="이름을 입력하세요"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
+              type="email"
+              placeholder="이메일 주소"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               required
               autoFocus
             />
@@ -56,7 +46,7 @@ export default function Login({ onLogin }) {
             <label className={styles.label}>비밀번호</label>
             <input
               type="password"
-              placeholder="비밀번호를 입력하세요"
+              placeholder="비밀번호"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required

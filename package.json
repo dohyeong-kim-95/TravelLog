@@ -6,10 +6,9 @@
   "type": "module",
   "scripts": {
     "generate-map": "node scripts/generate-korea-map.mjs",
-    "dev:server": "cd server && node --watch index.js",
-    "dev:client": "cd client && npm run dev",
+    "dev": "cd client && npm run dev",
     "build": "cd client && npm run build",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install:all": "npm install && cd client && npm install"
   },
   "repository": {
     "type": "git",
