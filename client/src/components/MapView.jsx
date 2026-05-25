@@ -4,7 +4,7 @@ import KoreaMap from './KoreaMap.jsx';
 import CityModal from './CityModal.jsx';
 import styles from './MapView.module.css';
 
-export default function MapView({ user }) {
+export default function MapView({ user, onLogout }) {
   const [visits, setVisits]           = useState([]);
   const [photos, setPhotos]           = useState([]);
   const [onlineSlots, setOnlineSlots] = useState([]);
@@ -100,7 +100,10 @@ export default function MapView({ user }) {
   const handlePhotoUploaded = useCallback(() => {}, []);
 
   // ── 로그아웃 ──────────────────────────────────────────────────
-  const handleLogout = () => supabase.auth.signOut();
+  const handleLogout = () => {
+    onLogout?.();
+    supabase.auth.signOut();
+  };
 
   // ── 파생 데이터 ───────────────────────────────────────────────
   const visitedByUser1 = visits.filter(v => v.user1).length;

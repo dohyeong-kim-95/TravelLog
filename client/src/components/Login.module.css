@@ -96,3 +96,42 @@
   background: var(--color-primary-dark);
   box-shadow: var(--shadow-md);
 }
+
+/* 자동 로그인 체크박스 */
+.autoLoginRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-default);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.checked {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+.checkmark {
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.autoLoginLabel {
+  font-size: 16px;
+  color: var(--text-primary);
+}

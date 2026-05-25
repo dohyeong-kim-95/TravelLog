@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import styles from './Login.module.css';
 
-export default function Login() {
+export default function Login({ onSaveCredentials }) {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  const [autoLogin, setAutoLogin] = useState(true);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
@@ -17,8 +18,10 @@ export default function Login() {
 
     if (authError) {
       setError('이메일 또는 비밀번호가 틀렸습니다 😢');
+    } else if (autoLogin) {
+      onSaveCredentials?.(email, password);
     }
-    // success: onAuthStateChange in App.jsx will handle the redirect
+
     setLoading(false);
   };
 
@@ -52,6 +55,17 @@ export default function Login() {
               required
             />
           </div>
+
+          {/* 자동 로그인 */}
+          <label className={styles.autoLoginRow}>
+            <div
+              className={`${styles.checkbox} ${autoLogin ? styles.checked : ''}`}
+              onClick={() => setAutoLogin(v => !v)}
+            >
+              {autoLogin && <span className={styles.checkmark}>✓</span>}
+            </div>
+            <span className={styles.autoLoginLabel}>이 기기에서 자동 로그인</span>
+          </label>
 
           {error && <p className={styles.error}>{error}</p>}
 
