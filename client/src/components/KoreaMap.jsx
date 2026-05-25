@@ -3,48 +3,58 @@ import { geoMercator, geoPath } from 'd3-geo';
 import koreaGeo from '../data/korea.json';
 import styles from './KoreaMap.module.css';
 
-// City state → fill color
-function getCityFill(row) {
-  if (!row) return '#F3F4F6';
-  if (row.user1 && row.user2) return 'var(--both-fill)';
-  if (row.user1) return 'var(--user1-fill)';
-  if (row.user2) return 'var(--user2-fill)';
-  return '#F3F4F6';
+const USER1_COLOR = '#60A5FA';
+const USER2_COLOR = '#F472B6';
+const BOTH_COLOR  = '#A78BFA';
+const USER1_FILL  = '#DBEAFE';
+const USER2_FILL  = '#FCE7F3';
+const BOTH_FILL   = '#EDE9FE';
+
+function getRevealedFill(row) {
+  if (!row || (!row.user1 && !row.user2)) return null;
+  if (row.user1 && row.user2) return BOTH_FILL;
+  if (row.user1) return USER1_FILL;
+  return USER2_FILL;
 }
 
-function getCityStroke(row) {
-  if (!row) return '#D1D5DB';
-  if (row.user1 && row.user2) return 'var(--both-color)';
-  if (row.user1) return 'var(--user1-color)';
-  if (row.user2) return 'var(--user2-color)';
-  return '#D1D5DB';
+function getRevealedStroke(row) {
+  if (!row || (!row.user1 && !row.user2)) return '#B8960C';
+  if (row.user1 && row.user2) return BOTH_COLOR;
+  if (row.user1) return USER1_COLOR;
+  return USER2_COLOR;
 }
 
-export default function KoreaMap({ visits, onToggle, userSlot }) {
-  const svgRef = useRef(null);
-  const [svgSize, setSvgSize] = useState({ width: 500, height: 700 });
-  const [tooltip, setTooltip] = useState(null); // { name, x, y }
-  const [hovered, setHovered] = useState(null);
+// CSS color string for scratch animation target
+function getRevealedColor(row, userSlot) {
+  if (!row) return userSlot === 1 ? USER1_FILL : USER2_FILL;
+  const willBeUser1 = row.user1 || userSlot === 1;
+  const willBeUser2 = row.user2 || userSlot === 2;
+  if (willBeUser1 && willBeUser2) return BOTH_FILL;
+  if (willBeUser1) return USER1_FILL;
+  return USER2_FILL;
+}
 
-  // Responsive SVG size
+export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) {
+  const wrapperRef = useRef(null);
+  const [svgSize, setSvgSize]         = useState({ width: 500, height: 700 });
+  const [tooltip, setTooltip]         = useState(null);
+  const [hovered, setHovered]         = useState(null);
+  // city codes currently running scratch animation → their target color
+  const [scratching, setScratching]   = useState(new Map());
+
   useEffect(() => {
-    if (!svgRef.current) return;
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) setSvgSize({ width, height });
-      }
+    if (!wrapperRef.current) return;
+    const obs = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) setSvgSize({ width, height });
     });
-    observer.observe(svgRef.current.parentElement);
-    return () => observer.disconnect();
+    obs.observe(wrapperRef.current);
+    return () => obs.disconnect();
   }, []);
 
-  const { projection, pathGenerator } = useMemo(() => {
-    const proj = geoMercator().fitSize(
-      [svgSize.width, svgSize.height],
-      koreaGeo
-    );
-    return { projection: proj, pathGenerator: geoPath(proj) };
+  const { projection, pathGen } = useMemo(() => {
+    const proj = geoMercator().fitSize([svgSize.width, svgSize.height], koreaGeo);
+    return { projection: proj, pathGen: geoPath(proj) };
   }, [svgSize]);
 
   const visitMap = useMemo(() => {
@@ -54,9 +64,21 @@ export default function KoreaMap({ visits, onToggle, userSlot }) {
   }, [visits]);
 
   const handleClick = useCallback((feature) => {
-    const { code, name, province } = feature.properties;
-    onToggle({ code, name, province });
-  }, [onToggle]);
+    const { code, name, province, centroid } = feature.properties;
+    const row = visitMap.get(code);
+    const field = `user${userSlot}`;
+    const isMarkingVisited = !row?.[field];
+
+    if (isMarkingVisited) {
+      const color = getRevealedColor(row, userSlot);
+      setScratching(prev => new Map(prev).set(code, color));
+      setTimeout(() => {
+        setScratching(prev => { const m = new Map(prev); m.delete(code); return m; });
+      }, 700);
+    }
+
+    onCityClick({ code, name, province, centroid });
+  }, [visitMap, userSlot, onCityClick]);
 
   const handleMouseMove = useCallback((e, feature) => {
     const rect = e.currentTarget.closest('svg').getBoundingClientRect();
@@ -64,8 +86,8 @@ export default function KoreaMap({ visits, onToggle, userSlot }) {
     setTooltip({
       name: feature.properties.name,
       province: feature.properties.province,
-      user1: row?.user1 || 0,
-      user2: row?.user2 || 0,
+      user1: row?.user1 || false,
+      user2: row?.user2 || false,
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     });
@@ -78,47 +100,152 @@ export default function KoreaMap({ visits, onToggle, userSlot }) {
   }, []);
 
   return (
-    <div className={styles.mapWrapper}>
-      <svg ref={svgRef} width="100%" height="100%" viewBox={`0 0 ${svgSize.width} ${svgSize.height}`}>
+    <div className={styles.mapWrapper} ref={wrapperRef}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${svgSize.width} ${svgSize.height}`}>
+        <defs>
+          {/* 금박 그라디언트 */}
+          <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%"
+                          gradientUnits="objectBoundingBox">
+            <stop offset="0%"   stopColor="#C8930A" />
+            <stop offset="20%"  stopColor="#E8B830" />
+            <stop offset="45%"  stopColor="#FFED88" />
+            <stop offset="65%"  stopColor="#D4A820" />
+            <stop offset="85%"  stopColor="#E8C040" />
+            <stop offset="100%" stopColor="#AA7800" />
+          </linearGradient>
+
+          {/* 긁힌 질감 필터 */}
+          <filter id="goldTexture" x="0%" y="0%" width="100%" height="100%"
+                  colorInterpolationFilters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65 0.9"
+                          numOctaves="3" seed="5" result="noise" />
+            <feColorMatrix type="saturate" values="0" in="noise" result="gray" />
+            <feBlend in="SourceGraphic" in2="gray" mode="overlay" result="blended" />
+            <feComposite in="blended" in2="SourceGraphic" operator="in" />
+          </filter>
+
+          {/* 긁힘 reveal 필터 (애니메이션 중) */}
+          <filter id="scratchReveal" x="-5%" y="-5%" width="110%" height="110%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.4 1.2"
+                          numOctaves="2" seed="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise"
+                               scale="6" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+
         <g>
           {koreaGeo.features.map((feature) => {
-            const code = feature.properties.code;
-            const row = visitMap.get(code);
-            const isHovered = hovered === code;
+            const { code, centroid } = feature.properties;
+            const row        = visitMap.get(code);
+            const isVisited  = !!(row?.user1 || row?.user2);
+            const isHovered  = hovered === code;
+            const isScratch  = scratching.has(code);
+            const revColor   = scratching.get(code);
+            const d          = pathGen(feature);
+
+            // 금박 하단 (이미 방문한 색상이 깔려있음)
+            const baseFill   = getRevealedFill(row) ?? '#F5ECD0';
+            const baseStroke = getRevealedStroke(row);
+
+            // photo badge 위치
+            let badgeX = 0, badgeY = 0;
+            if (photoCodes?.has(code) && centroid) {
+              const pt = projection(centroid);
+              if (pt) { badgeX = pt[0]; badgeY = pt[1]; }
+            }
 
             return (
-              <path
-                key={code}
-                d={pathGenerator(feature)}
-                fill={getCityFill(row)}
-                stroke={getCityStroke(row)}
-                strokeWidth={isHovered ? 2 : 0.8}
-                className={styles.region}
-                onClick={() => handleClick(feature)}
-                onMouseMove={(e) => handleMouseMove(e, feature)}
-                onMouseLeave={handleMouseLeave}
-                style={{
-                  filter: isHovered ? 'brightness(0.93)' : undefined,
-                  cursor: 'pointer',
-                }}
-              />
+              <g key={code}>
+                {/* 하단 레이어: 방문 색상 */}
+                <path
+                  d={d}
+                  fill={baseFill}
+                  stroke={baseStroke}
+                  strokeWidth={isHovered ? 1.8 : 0.7}
+                  strokeLinejoin="round"
+                />
+
+                {/* 금박 오버레이 (미방문 시 불투명, 방문 시 투명) */}
+                {!isScratch && (
+                  <path
+                    d={d}
+                    fill={isVisited ? 'transparent' : 'url(#goldGradient)'}
+                    filter={isVisited ? undefined : 'url(#goldTexture)'}
+                    stroke={isVisited ? 'transparent' : (isHovered ? '#9A7008' : '#C8A020')}
+                    strokeWidth={isHovered ? 1.8 : 0.7}
+                    strokeLinejoin="round"
+                    opacity={isVisited ? 0 : 1}
+                    className={styles.goldLayer}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleClick(feature)}
+                    onMouseMove={e => handleMouseMove(e, feature)}
+                    onMouseLeave={handleMouseLeave}
+                  />
+                )}
+
+                {/* 긁는 애니메이션 레이어 */}
+                {isScratch && (
+                  <path
+                    d={d}
+                    fill="url(#goldGradient)"
+                    filter="url(#scratchReveal)"
+                    stroke="#C8A020"
+                    strokeWidth={0.7}
+                    strokeLinejoin="round"
+                    className={styles.scratching}
+                    style={{ '--reveal': revColor, cursor: 'pointer' }}
+                    onClick={() => handleClick(feature)}
+                    onMouseMove={e => handleMouseMove(e, feature)}
+                    onMouseLeave={handleMouseLeave}
+                  />
+                )}
+
+                {/* 방문된 지역 클릭 핸들러 */}
+                {isVisited && !isScratch && (
+                  <path
+                    d={d}
+                    fill="transparent"
+                    stroke="transparent"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleClick(feature)}
+                    onMouseMove={e => handleMouseMove(e, feature)}
+                    onMouseLeave={handleMouseLeave}
+                  />
+                )}
+
+                {/* 사진 배지 */}
+                {photoCodes?.has(code) && isVisited && badgeX > 0 && (
+                  <text
+                    x={badgeX}
+                    y={badgeY}
+                    fontSize={9}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    pointerEvents="none"
+                    style={{ userSelect: 'none' }}
+                  >
+                    📷
+                  </text>
+                )}
+              </g>
             );
           })}
         </g>
       </svg>
 
+      {/* 툴팁 */}
       {tooltip && (
         <div
           className={styles.tooltip}
-          style={{ left: tooltip.x + 12, top: tooltip.y - 12 }}
+          style={{ left: tooltip.x + 14, top: tooltip.y - 14 }}
         >
           <div className={styles.tooltipName}>{tooltip.name}</div>
           <div className={styles.tooltipSub}>{tooltip.province}</div>
           <div className={styles.tooltipVisits}>
-            {tooltip.user1 && <span className={styles.dot1} />}
-            {tooltip.user2 && <span className={styles.dot2} />}
+            {tooltip.user1 && <span className={styles.dot} style={{ background: USER1_COLOR }} />}
+            {tooltip.user2 && <span className={styles.dot} style={{ background: USER2_COLOR }} />}
             {!tooltip.user1 && !tooltip.user2 && (
-              <span className={styles.notVisited}>아직 미방문</span>
+              <span className={styles.notVisited}>클릭해서 색칠하기 ✏️</span>
             )}
           </div>
         </div>

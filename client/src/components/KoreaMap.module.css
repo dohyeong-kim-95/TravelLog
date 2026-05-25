@@ -5,10 +5,43 @@
   min-height: 400px;
 }
 
-.region {
-  transition: fill 0.2s ease, filter 0.15s ease;
+/* 금박 레이어 - 마우스 오버 시 살짝 밝아짐 */
+.goldLayer {
+  transition: filter 0.15s ease, opacity 0.15s ease;
 }
 
+.goldLayer:hover {
+  filter: url(#goldTexture) brightness(1.1) !important;
+}
+
+/* 긁기 애니메이션 */
+.scratching {
+  animation: scratchOff 0.65s ease-out forwards;
+}
+
+@keyframes scratchOff {
+  0%   {
+    fill: url(#goldGradient);
+    opacity: 1;
+    filter: url(#scratchReveal);
+  }
+  30%  {
+    opacity: 0.85;
+    filter: url(#scratchReveal);
+  }
+  70%  {
+    fill: var(--reveal, #DBEAFE);
+    opacity: 0.5;
+    filter: url(#scratchReveal);
+  }
+  100% {
+    fill: var(--reveal, #DBEAFE);
+    opacity: 0;
+    filter: none;
+  }
+}
+
+/* 툴팁 */
 .tooltip {
   position: absolute;
   pointer-events: none;
@@ -19,7 +52,6 @@
   box-shadow: var(--shadow-lg);
   white-space: nowrap;
   z-index: 100;
-  font-family: var(--font-body);
   animation: fadeIn 0.1s ease;
 }
 
@@ -29,13 +61,13 @@
 }
 
 .tooltipName {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .tooltipSub {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
   margin-top: 2px;
 }
@@ -43,27 +75,18 @@
 .tooltipVisits {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 6px;
   margin-top: var(--space-xs);
 }
 
-.dot1 {
+.dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: var(--user1-color);
-}
-
-.dot2 {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--user2-color);
 }
 
 .notVisited {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
