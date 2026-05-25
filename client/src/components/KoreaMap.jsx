@@ -24,7 +24,6 @@ function getRevealedStroke(row) {
   return USER2_COLOR;
 }
 
-// CSS color string for scratch animation target
 function getRevealedColor(row, userSlot) {
   if (!row) return userSlot === 1 ? USER1_FILL : USER2_FILL;
   const willBeUser1 = row.user1 || userSlot === 1;
@@ -34,13 +33,12 @@ function getRevealedColor(row, userSlot) {
   return USER2_FILL;
 }
 
-export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) {
+export default function KoreaMap({ visits, onCityClick, userSlot, photoMap }) {
   const wrapperRef = useRef(null);
-  const [svgSize, setSvgSize]         = useState({ width: 500, height: 700 });
-  const [tooltip, setTooltip]         = useState(null);
-  const [hovered, setHovered]         = useState(null);
-  // city codes currently running scratch animation → their target color
-  const [scratching, setScratching]   = useState(new Map());
+  const [svgSize, setSvgSize]       = useState({ width: 500, height: 700 });
+  const [tooltip, setTooltip]       = useState(null);
+  const [hovered, setHovered]       = useState(null);
+  const [scratching, setScratching] = useState(new Map());
 
   useEffect(() => {
     if (!wrapperRef.current) return;
@@ -103,7 +101,7 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
     <div className={styles.mapWrapper} ref={wrapperRef}>
       <svg width="100%" height="100%" viewBox={`0 0 ${svgSize.width} ${svgSize.height}`}>
         <defs>
-          {/* 스크래치 코팅 그라디언트 (은색/회색 - 물리적 스크래치 맵처럼) */}
+          {/* 스크래치 코팅 그라디언트 */}
           <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%"
                           gradientUnits="objectBoundingBox">
             <stop offset="0%"   stopColor="#9CA3AF" />
@@ -114,7 +112,6 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
             <stop offset="100%" stopColor="#8A9099" />
           </linearGradient>
 
-          {/* 스크래치 질감 필터 */}
           <filter id="goldTexture" x="0%" y="0%" width="100%" height="100%"
                   colorInterpolationFilters="sRGB">
             <feTurbulence type="fractalNoise" baseFrequency="0.65 0.9"
@@ -124,13 +121,32 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
             <feComposite in="blended" in2="SourceGraphic" operator="in" />
           </filter>
 
-          {/* 긁힘 reveal 필터 (애니메이션 중) */}
           <filter id="scratchReveal" x="-5%" y="-5%" width="110%" height="110%">
             <feTurbulence type="fractalNoise" baseFrequency="0.4 1.2"
                           numOctaves="2" seed="3" result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise"
                                scale="6" xChannelSelector="R" yChannelSelector="G" />
           </filter>
+
+          {/* 도시별 대표 사진 패턴 */}
+          {koreaGeo.features.map(feature => {
+            const { code } = feature.properties;
+            const row = visitMap.get(code);
+            const isVisited = !!(row?.user1 || row?.user2);
+            const photoUrl = photoMap?.get(code);
+            if (!isVisited || !photoUrl) return null;
+            const [[x0, y0], [x1, y1]] = pathGen.bounds(feature);
+            const w = x1 - x0;
+            const h = y1 - y0;
+            return (
+              <pattern key={`pat-${code}`} id={`photo-${code}`}
+                patternUnits="userSpaceOnUse"
+                x={x0} y={y0} width={w} height={h}>
+                <image href={photoUrl} x={x0} y={y0} width={w} height={h}
+                  preserveAspectRatio="xMidYMid slice" />
+              </pattern>
+            );
+          })}
         </defs>
 
         {/* 바다 배경 */}
@@ -138,44 +154,51 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
 
         <g>
           {koreaGeo.features.map((feature) => {
-            const { code, centroid } = feature.properties;
-            const row        = visitMap.get(code);
-            const isVisited  = !!(row?.user1 || row?.user2);
-            const isHovered  = hovered === code;
-            const isScratch  = scratching.has(code);
-            const revColor   = scratching.get(code);
-            const d          = pathGen(feature);
-
-            // 스크래치 하단 (이미 방문한 색상이 깔려있음)
-            const baseFill   = getRevealedFill(row) ?? '#E5E8ED';
+            const { code } = feature.properties;
+            const row       = visitMap.get(code);
+            const isVisited = !!(row?.user1 || row?.user2);
+            const isHovered = hovered === code;
+            const isScratch = scratching.has(code);
+            const revColor  = scratching.get(code);
+            const d         = pathGen(feature);
+            const photoUrl  = photoMap?.get(code);
             const baseStroke = getRevealedStroke(row);
 
-            // photo badge 위치
-            let badgeX = 0, badgeY = 0;
-            if (photoCodes?.has(code) && centroid) {
-              const pt = projection(centroid);
-              if (pt) { badgeX = pt[0]; badgeY = pt[1]; }
-            }
+            // 방문+사진 → 사진 패턴, 방문+사진없음 → 색상, 미방문 → 회색
+            const baseFill = (isVisited && photoUrl)
+              ? `url(#photo-${code})`
+              : (getRevealedFill(row) ?? '#E5E8ED');
 
             return (
               <g key={code}>
-                {/* 하단 레이어: 방문 색상 */}
+                {/* 하단: 사진 또는 방문 색상 */}
                 <path
                   d={d}
                   fill={baseFill}
                   stroke={baseStroke}
-                  strokeWidth={isHovered ? 1.8 : 0.7}
+                  strokeWidth={isHovered ? 2 : 0.8}
                   strokeLinejoin="round"
                 />
 
-                {/* 스크래치 코팅 오버레이 (미방문 시 불투명, 방문 시 투명) */}
+                {/* 사진 위 연한 컴러 오버레이 (누가 방문했는지 힌트) */}
+                {isVisited && photoUrl && (
+                  <path
+                    d={d}
+                    fill={getRevealedFill(row) ?? 'transparent'}
+                    opacity={0.25}
+                    stroke="none"
+                    pointerEvents="none"
+                  />
+                )}
+
+                {/* 스크래치 코팅 (미방문 시 불투명) */}
                 {!isScratch && (
                   <path
                     d={d}
                     fill={isVisited ? 'transparent' : 'url(#goldGradient)'}
                     filter={isVisited ? undefined : 'url(#goldTexture)'}
                     stroke={isVisited ? 'transparent' : (isHovered ? '#6B7280' : '#9CA3AF')}
-                    strokeWidth={isHovered ? 1.8 : 0.7}
+                    strokeWidth={isHovered ? 2 : 0.8}
                     strokeLinejoin="round"
                     opacity={isVisited ? 0 : 1}
                     className={styles.goldLayer}
@@ -186,14 +209,14 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
                   />
                 )}
 
-                {/* 긁는 애니메이션 레이어 */}
+                {/* 긁는 애니메이션 */}
                 {isScratch && (
                   <path
                     d={d}
                     fill="url(#goldGradient)"
                     filter="url(#scratchReveal)"
                     stroke="#9CA3AF"
-                    strokeWidth={0.7}
+                    strokeWidth={0.8}
                     strokeLinejoin="round"
                     className={styles.scratching}
                     style={{ '--reveal': revColor, cursor: 'pointer' }}
@@ -215,28 +238,12 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
                     onMouseLeave={handleMouseLeave}
                   />
                 )}
-
-                {/* 사진 배지 */}
-                {photoCodes?.has(code) && isVisited && badgeX > 0 && (
-                  <text
-                    x={badgeX}
-                    y={badgeY}
-                    fontSize={9}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    pointerEvents="none"
-                    style={{ userSelect: 'none' }}
-                  >
-                    📷
-                  </text>
-                )}
               </g>
             );
           })}
         </g>
       </svg>
 
-      {/* 툴팁 */}
       {tooltip && (
         <div
           className={styles.tooltip}

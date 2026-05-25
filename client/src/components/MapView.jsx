@@ -9,7 +9,7 @@ export default function MapView({ user, onLogout }) {
   const [photos, setPhotos]             = useState([]);
   const [onlineSlots, setOnlineSlots]   = useState([]);
   const [selectedCity, setSelectedCity] = useState(null);
-  const [showPanel, setShowPanel]       = useState(false); // 모바일 통계 패널
+  const [showPanel, setShowPanel]       = useState(false);
 
   useEffect(() => {
     supabase.from('visits').select('*').then(({ data }) => { if (data) setVisits(data); });
@@ -73,16 +73,29 @@ export default function MapView({ user, onLogout }) {
     }
   }, [visits, user.slot]);
 
-  const handleCityClick  = useCallback((props) => setSelectedCity(props), []);
+  const handleCityClick   = useCallback((props) => setSelectedCity(props), []);
   const handleModalToggle = useCallback(() => {
     if (selectedCity) handleToggle(selectedCity.code, selectedCity.name, selectedCity.province);
   }, [selectedCity, handleToggle]);
   const handleLogout = () => { onLogout?.(); supabase.auth.signOut(); };
 
-  const visitedByBoth  = visits.filter(v => v.user1 && v.user2).length;
-  const totalVisited   = visits.filter(v => v.user1 || v.user2).length;
+  const visitedByBoth = visits.filter(v => v.user1 && v.user2).length;
+  const totalVisited  = visits.filter(v => v.user1 || v.user2).length;
 
   const photoCodes = useMemo(() => new Set(photos.map(p => p.city_code)), [photos]);
+
+  // 도시별 대표 사진 URL (가장 먼저 등록된 사진)
+  const photoMap = useMemo(() => {
+    const m = new Map();
+    for (const p of photos) {
+      if (!m.has(p.city_code)) {
+        const url = supabase.storage.from('travel-photos').getPublicUrl(p.storage_path).data.publicUrl;
+        m.set(p.city_code, url);
+      }
+    }
+    return m;
+  }, [photos]);
+
   const selectedVisitRow = useMemo(
     () => selectedCity ? visits.find(v => v.city_code === selectedCity.code) ?? null : null,
     [visits, selectedCity]);
@@ -92,7 +105,6 @@ export default function MapView({ user, onLogout }) {
 
   const panelContent = (
     <>
-      {/* 현재 접속 */}
       <div className={styles.panelSection}>
         <p className={styles.panelLabel}>현재 접속</p>
         <div className={styles.onlineBadges}>
@@ -101,39 +113,35 @@ export default function MapView({ user, onLogout }) {
         </div>
       </div>
 
-      {/* 범례 */}
       <div className={styles.panelSection}>
         <p className={styles.panelLabel}>범례</p>
         <div className={styles.legend}>
-          <LegendItem color="var(--user1-color)" fill="var(--user1-fill)" label="나 방문"    />
-          <LegendItem color="var(--user2-color)" fill="var(--user2-fill)" label="여친 방문"  />
-          <LegendItem color="var(--both-color)"  fill="var(--both-fill)"  label="함께 방문"  />
-          <LegendItem color="#6B7280" fill="#E5E8ED"              label="아직 못 간 곳" />
+          <LegendItem color="var(--user1-color)" fill="var(--user1-fill)" label="나 방문" />
+          <LegendItem color="var(--user2-color)" fill="var(--user2-fill)" label="여친 방문" />
+          <LegendItem color="var(--both-color)"  fill="var(--both-fill)"  label="함께 방문" />
+          <LegendItem color="#6B7280" fill="#E5E8ED" label="아직 못 간 곳" />
         </div>
       </div>
 
-      {/* 통계 */}
       <div className={styles.panelSection}>
         <p className={styles.panelLabel}>여행 통계</p>
         <div className={styles.stats}>
-          <StatRow icon="🗺️" label="가본 곳 (합계)"  value={totalVisited}    color="var(--text-primary)"   />
-          <StatRow icon="💜" label="함께 가본 곳"     value={visitedByBoth}   color="var(--both-color)"     />
+          <StatRow icon="🗺️" label="가본 곳 (합계)" value={totalVisited}    color="var(--text-primary)"   />
+          <StatRow icon="💜" label="함께 가본 곳"    value={visitedByBoth}   color="var(--both-color)"     />
           <div className={styles.divider} />
-          <StatRow icon="📷" label="사진 있는 곳"     value={photoCodes.size} color="var(--color-tertiary)" />
+          <StatRow icon="📷" label="사진 있는 곳"    value={photoCodes.size} color="var(--color-tertiary)" />
         </div>
       </div>
 
-      {/* 사용법 */}
       <div className={styles.helpCard}>
         <p className={styles.panelLabel}>사용법</p>
-        <p className={styles.helpText}>지역을 탭하면 상세 창이 열려요. 방문 표시를 하면 스크래치가 긁혀 색상이 드러나고, 사진도 추가할 수 있어요 📸</p>
+        <p className={styles.helpText}>지역을 탭하면 상세 창이 열려요. 방문 표시 후 사진을 올리면 스크래치가 긁혀 지도에 나타나요 📸</p>
       </div>
     </>
   );
 
   return (
     <div className={styles.layout}>
-      {/* 헤더 */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <span className={styles.logo}>🗺️</span>
@@ -148,9 +156,7 @@ export default function MapView({ user, onLogout }) {
         </div>
       </header>
 
-      {/* 지도 + 데스크탑 사이드바 */}
       <main className={styles.main}>
-        {/* 데스크탑 사이드바 */}
         <aside className={styles.sidebar}>
           <div className={styles.sideCard}>
             <p className={styles.panelLabel}>현재 접속</p>
@@ -168,18 +174,16 @@ export default function MapView({ user, onLogout }) {
           <div className={styles.sideCard}>{panelContent}</div>
         </aside>
 
-        {/* 지도 */}
         <section className={styles.mapSection}>
           <KoreaMap
             visits={visits}
             onCityClick={handleCityClick}
             userSlot={user.slot}
-            photoCodes={photoCodes}
+            photoMap={photoMap}
           />
         </section>
       </main>
 
-      {/* 모바일 하단 바 */}
       <div className={styles.mobileBar}>
         <div className={styles.mobileStats}>
           <span>🗺️ <strong>{totalVisited}</strong>곳 방문</span>
@@ -190,7 +194,6 @@ export default function MapView({ user, onLogout }) {
         </button>
       </div>
 
-      {/* 모바일 통계 패널 (슬라이드업) */}
       {showPanel && (
         <div className={styles.sheetBackdrop} onClick={() => setShowPanel(false)}>
           <div className={styles.bottomSheet} onClick={e => e.stopPropagation()}>
@@ -199,14 +202,11 @@ export default function MapView({ user, onLogout }) {
               <span className={styles.sheetTitle}>통계 & 범례</span>
               <button className={styles.sheetClose} onClick={() => setShowPanel(false)}>✕</button>
             </div>
-            <div className={styles.sheetContent}>
-              {panelContent}
-            </div>
+            <div className={styles.sheetContent}>{panelContent}</div>
           </div>
         </div>
       )}
 
-      {/* 도시 상세 모달 */}
       {selectedCity && (
         <CityModal
           city={selectedCity}
