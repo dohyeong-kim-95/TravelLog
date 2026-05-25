@@ -3,5 +3,6 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // Supabase를 직접 사용하므로 proxy 불필요
+  // GitHub Actions configure-pages가 BASE_PATH를 주입, 커스텀 도메인 시 '/'
+  base: process.env.BASE_PATH || '/',
 });
