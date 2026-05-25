@@ -18,7 +18,7 @@ function getRevealedFill(row) {
 }
 
 function getRevealedStroke(row) {
-  if (!row || (!row.user1 && !row.user2)) return '#9CA3AF';
+  if (!row || (!row.user1 && !row.user2)) return '#94A3B8';
   if (row.user1 && row.user2) return BOTH_COLOR;
   if (row.user1) return USER1_COLOR;
   return USER2_COLOR;
@@ -50,9 +50,9 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoMap }) {
     return () => obs.disconnect();
   }, []);
 
-  const { projection, pathGen } = useMemo(() => {
+  const { pathGen } = useMemo(() => {
     const proj = geoMercator().fitSize([svgSize.width, svgSize.height], koreaGeo);
-    return { projection: proj, pathGen: geoPath(proj) };
+    return { pathGen: geoPath(proj) };
   }, [svgSize]);
 
   const visitMap = useMemo(() => {
@@ -60,6 +60,20 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoMap }) {
     for (const v of visits) m.set(v.city_code, v);
     return m;
   }, [visits]);
+
+  // 사진 패턴 (방문+사진 있는 도시만)
+  const photoPatterns = useMemo(() => {
+    if (!photoMap?.size) return [];
+    return koreaGeo.features.flatMap(feature => {
+      const { code } = feature.properties;
+      const row = visitMap.get(code);
+      if (!row?.user1 && !row?.user2) return [];
+      const url = photoMap.get(code);
+      if (!url) return [];
+      const [[x0, y0], [x1, y1]] = pathGen.bounds(feature);
+      return [{ code, url, x0, y0, w: x1 - x0, h: y1 - y0 }];
+    });
+  }, [visitMap, photoMap, pathGen]);
 
   const handleClick = useCallback((feature) => {
     const { code, name, province, centroid } = feature.properties;
@@ -101,26 +115,16 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoMap }) {
     <div className={styles.mapWrapper} ref={wrapperRef}>
       <svg width="100%" height="100%" viewBox={`0 0 ${svgSize.width} ${svgSize.height}`}>
         <defs>
-          {/* 스크래치 코팅 그라디언트 */}
-          <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%"
+          {/* 스크래치 코팅 그라디언트 (은색/회색) */}
+          <linearGradient id="scratchGrad" x1="0%" y1="0%" x2="100%" y2="100%"
                           gradientUnits="objectBoundingBox">
-            <stop offset="0%"   stopColor="#9CA3AF" />
-            <stop offset="20%"  stopColor="#C8CDD6" />
-            <stop offset="45%"  stopColor="#E5E8ED" />
-            <stop offset="60%"  stopColor="#B8BFC9" />
-            <stop offset="80%"  stopColor="#D0D5DE" />
-            <stop offset="100%" stopColor="#8A9099" />
+            <stop offset="0%"   stopColor="#A8B2BE" />
+            <stop offset="35%"  stopColor="#D4D9E0" />
+            <stop offset="60%"  stopColor="#E8EAED" />
+            <stop offset="100%" stopColor="#8E99A6" />
           </linearGradient>
 
-          <filter id="goldTexture" x="0%" y="0%" width="100%" height="100%"
-                  colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.65 0.9"
-                          numOctaves="3" seed="5" result="noise" />
-            <feColorMatrix type="saturate" values="0" in="noise" result="gray" />
-            <feBlend in="SourceGraphic" in2="gray" mode="overlay" result="blended" />
-            <feComposite in="blended" in2="SourceGraphic" operator="in" />
-          </filter>
-
+          {/* 긁힘 reveal 필터 (애니메이션 중에만 사용) */}
           <filter id="scratchReveal" x="-5%" y="-5%" width="110%" height="110%">
             <feTurbulence type="fractalNoise" baseFrequency="0.4 1.2"
                           numOctaves="2" seed="3" result="noise" />
@@ -128,29 +132,19 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoMap }) {
                                scale="6" xChannelSelector="R" yChannelSelector="G" />
           </filter>
 
-          {/* 도시별 대표 사진 패턴 */}
-          {koreaGeo.features.map(feature => {
-            const { code } = feature.properties;
-            const row = visitMap.get(code);
-            const isVisited = !!(row?.user1 || row?.user2);
-            const photoUrl = photoMap?.get(code);
-            if (!isVisited || !photoUrl) return null;
-            const [[x0, y0], [x1, y1]] = pathGen.bounds(feature);
-            const w = x1 - x0;
-            const h = y1 - y0;
-            return (
-              <pattern key={`pat-${code}`} id={`photo-${code}`}
-                patternUnits="userSpaceOnUse"
-                x={x0} y={y0} width={w} height={h}>
-                <image href={photoUrl} x={x0} y={y0} width={w} height={h}
-                  preserveAspectRatio="xMidYMid slice" />
-              </pattern>
-            );
-          })}
+          {/* 도시별 사진 패턴 */}
+          {photoPatterns.map(({ code, url, x0, y0, w, h }) => (
+            <pattern key={code} id={`photo-${code}`}
+              patternUnits="userSpaceOnUse"
+              x={x0} y={y0} width={w} height={h}>
+              <image href={url} x={x0} y={y0} width={w} height={h}
+                preserveAspectRatio="xMidYMid slice" />
+            </pattern>
+          ))}
         </defs>
 
         {/* 바다 배경 */}
-        <rect x="0" y="0" width={svgSize.width} height={svgSize.height} fill="#B8DEF0" />
+        <rect x="0" y="0" width={svgSize.width} height={svgSize.height} fill="#A8D8EA" />
 
         <g>
           {koreaGeo.features.map((feature) => {
@@ -162,80 +156,51 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoMap }) {
             const revColor  = scratching.get(code);
             const d         = pathGen(feature);
             const photoUrl  = photoMap?.get(code);
-            const baseStroke = getRevealedStroke(row);
 
-            // 방문+사진 → 사진 패턴, 방문+사진없음 → 색상, 미방문 → 회색
-            const baseFill = (isVisited && photoUrl)
-              ? `url(#photo-${code})`
-              : (getRevealedFill(row) ?? '#E5E8ED');
+            const stroke      = getRevealedStroke(row);
+            const strokeWidth = isHovered ? 1.5 : 0.6;
+
+            // 방문+사진 → 사진, 방문+사진없음 → 색상, 미방문 → 스크래치
+            const fill = isVisited
+              ? (photoUrl ? `url(#photo-${code})` : (getRevealedFill(row) ?? USER1_FILL))
+              : 'url(#scratchGrad)';
 
             return (
               <g key={code}>
-                {/* 하단: 사진 또는 방문 색상 */}
                 <path
                   d={d}
-                  fill={baseFill}
-                  stroke={baseStroke}
-                  strokeWidth={isHovered ? 2 : 0.8}
+                  fill={fill}
+                  stroke={stroke}
+                  strokeWidth={strokeWidth}
                   strokeLinejoin="round"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => handleClick(feature)}
+                  onMouseMove={e => handleMouseMove(e, feature)}
+                  onMouseLeave={handleMouseLeave}
                 />
 
-                {/* 사진 위 연한 컴러 오버레이 (누가 방문했는지 힌트) */}
+                {/* 사진 위 연한 컬러 오버레이 */}
                 {isVisited && photoUrl && (
                   <path
                     d={d}
                     fill={getRevealedFill(row) ?? 'transparent'}
-                    opacity={0.25}
+                    opacity={0.22}
                     stroke="none"
                     pointerEvents="none"
                   />
                 )}
 
-                {/* 스크래치 코팅 (미방문 시 불투명) */}
-                {!isScratch && (
-                  <path
-                    d={d}
-                    fill={isVisited ? 'transparent' : 'url(#goldGradient)'}
-                    filter={isVisited ? undefined : 'url(#goldTexture)'}
-                    stroke={isVisited ? 'transparent' : (isHovered ? '#6B7280' : '#9CA3AF')}
-                    strokeWidth={isHovered ? 2 : 0.8}
-                    strokeLinejoin="round"
-                    opacity={isVisited ? 0 : 1}
-                    className={styles.goldLayer}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleClick(feature)}
-                    onMouseMove={e => handleMouseMove(e, feature)}
-                    onMouseLeave={handleMouseLeave}
-                  />
-                )}
-
-                {/* 긁는 애니메이션 */}
+                {/* 스크래치 긁기 애니메이션 */}
                 {isScratch && (
                   <path
                     d={d}
-                    fill="url(#goldGradient)"
+                    fill="url(#scratchGrad)"
                     filter="url(#scratchReveal)"
-                    stroke="#9CA3AF"
-                    strokeWidth={0.8}
+                    stroke={stroke}
+                    strokeWidth={strokeWidth}
                     strokeLinejoin="round"
                     className={styles.scratching}
-                    style={{ '--reveal': revColor, cursor: 'pointer' }}
-                    onClick={() => handleClick(feature)}
-                    onMouseMove={e => handleMouseMove(e, feature)}
-                    onMouseLeave={handleMouseLeave}
-                  />
-                )}
-
-                {/* 방문된 지역 클릭 핸들러 */}
-                {isVisited && !isScratch && (
-                  <path
-                    d={d}
-                    fill="transparent"
-                    stroke="transparent"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleClick(feature)}
-                    onMouseMove={e => handleMouseMove(e, feature)}
-                    onMouseLeave={handleMouseLeave}
+                    style={{ '--reveal': revColor, cursor: 'pointer', pointerEvents: 'none' }}
                   />
                 )}
               </g>
@@ -255,7 +220,7 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoMap }) {
             {tooltip.user1 && <span className={styles.dot} style={{ background: USER1_COLOR }} />}
             {tooltip.user2 && <span className={styles.dot} style={{ background: USER2_COLOR }} />}
             {!tooltip.user1 && !tooltip.user2 && (
-              <span className={styles.notVisited}>클릭해서 색칠하기 ✏️</span>
+              <span className={styles.notVisited}>탭해서 방문 표시하기 ✏️</span>
             )}
           </div>
         </div>
