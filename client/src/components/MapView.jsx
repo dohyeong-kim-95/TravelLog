@@ -79,8 +79,6 @@ export default function MapView({ user, onLogout }) {
   }, [selectedCity, handleToggle]);
   const handleLogout = () => { onLogout?.(); supabase.auth.signOut(); };
 
-  const visitedByUser1 = visits.filter(v => v.user1).length;
-  const visitedByUser2 = visits.filter(v => v.user2).length;
   const visitedByBoth  = visits.filter(v => v.user1 && v.user2).length;
   const totalVisited   = visits.filter(v => v.user1 || v.user2).length;
 
@@ -107,10 +105,10 @@ export default function MapView({ user, onLogout }) {
       <div className={styles.panelSection}>
         <p className={styles.panelLabel}>범례</p>
         <div className={styles.legend}>
-          <LegendItem color="var(--user1-color)" fill="var(--user1-fill)" label="나 방문"   count={visitedByUser1} />
-          <LegendItem color="var(--user2-color)" fill="var(--user2-fill)" label="여친 방문" count={visitedByUser2} />
-          <LegendItem color="var(--both-color)"  fill="var(--both-fill)"  label="함께 방문" count={visitedByBoth}  />
-          <LegendItem color="#6B7280" fill="#E5E8ED"              label="아직 못 간 곳" count={162 - totalVisited} />
+          <LegendItem color="var(--user1-color)" fill="var(--user1-fill)" label="나 방문"    />
+          <LegendItem color="var(--user2-color)" fill="var(--user2-fill)" label="여친 방문"  />
+          <LegendItem color="var(--both-color)"  fill="var(--both-fill)"  label="함께 방문"  />
+          <LegendItem color="#6B7280" fill="#E5E8ED"              label="아직 못 간 곳" />
         </div>
       </div>
 
@@ -118,11 +116,10 @@ export default function MapView({ user, onLogout }) {
       <div className={styles.panelSection}>
         <p className={styles.panelLabel}>여행 통계</p>
         <div className={styles.stats}>
-          <StatRow icon="💙" label="내가 가본 곳"   value={visitedByUser1} color="var(--user1-color)" />
-          <StatRow icon="💗" label="여친이 가본 곳" value={visitedByUser2} color="var(--user2-color)" />
-          <StatRow icon="💜" label="함께 가본 곳"   value={visitedByBoth}  color="var(--both-color)"  />
+          <StatRow icon="🗺️" label="가본 곳 (합계)"  value={totalVisited}    color="var(--text-primary)"   />
+          <StatRow icon="💜" label="함께 가본 곳"     value={visitedByBoth}   color="var(--both-color)"     />
           <div className={styles.divider} />
-          <StatRow icon="📷" label="사진 있는 곳"   value={photoCodes.size} color="var(--color-tertiary)" />
+          <StatRow icon="📷" label="사진 있는 곳"     value={photoCodes.size} color="var(--color-tertiary)" />
         </div>
       </div>
 
@@ -185,9 +182,8 @@ export default function MapView({ user, onLogout }) {
       {/* 모바일 하단 바 */}
       <div className={styles.mobileBar}>
         <div className={styles.mobileStats}>
-          <span style={{ color: 'var(--user1-color)' }}>💙 {visitedByUser1}</span>
-          <span style={{ color: 'var(--user2-color)' }}>💗 {visitedByUser2}</span>
-          <span style={{ color: 'var(--both-color)'  }}>💜 {visitedByBoth}</span>
+          <span>🗺️ <strong>{totalVisited}</strong>곳 방문</span>
+          <span style={{ color: 'var(--both-color)' }}>💜 함께 {visitedByBoth}곳</span>
         </div>
         <button className={styles.panelBtn} onClick={() => setShowPanel(true)}>
           📊 통계
@@ -240,12 +236,11 @@ function OnlineBadge({ slot, online, label }) {
   );
 }
 
-function LegendItem({ color, fill, label, count }) {
+function LegendItem({ color, fill, label }) {
   return (
     <div className={styles.legendItem}>
       <span className={styles.swatch} style={{ background: fill, border: `2px solid ${color}` }} />
       <span className={styles.legendLabel}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color }}>{count}곳</span>
     </div>
   );
 }

@@ -133,6 +133,9 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
           </filter>
         </defs>
 
+        {/* 바다 배경 */}
+        <rect x="0" y="0" width={svgSize.width} height={svgSize.height} fill="#B8DEF0" />
+
         <g>
           {koreaGeo.features.map((feature) => {
             const { code, centroid } = feature.properties;
@@ -165,7 +168,7 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
                   strokeLinejoin="round"
                 />
 
-                {/* 금박 오버레이 (미방문 시 불투명, 방문 시 투명) */}
+                {/* 스크래치 코팅 오버레이 (미방문 시 불투명, 방문 시 투명) */}
                 {!isScratch && (
                   <path
                     d={d}
