@@ -5,13 +5,13 @@
   min-height: 400px;
 }
 
-/* 금박 레이어 - 마우스 오버 시 살짝 밝아짐 */
+/* 스크래치 코팅 레이어 - 마우스 오버 시 살짝 밝아짐 */
 .goldLayer {
   transition: filter 0.15s ease, opacity 0.15s ease;
 }
 
 .goldLayer:hover {
-  filter: url(#goldTexture) brightness(1.1) !important;
+  filter: url(#goldTexture) brightness(1.08) !important;
 }
 
 /* 긁기 애니메이션 */

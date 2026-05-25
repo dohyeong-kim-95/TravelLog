@@ -18,7 +18,7 @@ function getRevealedFill(row) {
 }
 
 function getRevealedStroke(row) {
-  if (!row || (!row.user1 && !row.user2)) return '#B8960C';
+  if (!row || (!row.user1 && !row.user2)) return '#9CA3AF';
   if (row.user1 && row.user2) return BOTH_COLOR;
   if (row.user1) return USER1_COLOR;
   return USER2_COLOR;
@@ -103,18 +103,18 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
     <div className={styles.mapWrapper} ref={wrapperRef}>
       <svg width="100%" height="100%" viewBox={`0 0 ${svgSize.width} ${svgSize.height}`}>
         <defs>
-          {/* 금박 그라디언트 */}
+          {/* 스크래치 코팅 그라디언트 (은색/회색 - 물리적 스크래치 맵처럼) */}
           <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%"
                           gradientUnits="objectBoundingBox">
-            <stop offset="0%"   stopColor="#C8930A" />
-            <stop offset="20%"  stopColor="#E8B830" />
-            <stop offset="45%"  stopColor="#FFED88" />
-            <stop offset="65%"  stopColor="#D4A820" />
-            <stop offset="85%"  stopColor="#E8C040" />
-            <stop offset="100%" stopColor="#AA7800" />
+            <stop offset="0%"   stopColor="#9CA3AF" />
+            <stop offset="20%"  stopColor="#C8CDD6" />
+            <stop offset="45%"  stopColor="#E5E8ED" />
+            <stop offset="60%"  stopColor="#B8BFC9" />
+            <stop offset="80%"  stopColor="#D0D5DE" />
+            <stop offset="100%" stopColor="#8A9099" />
           </linearGradient>
 
-          {/* 긁힌 질감 필터 */}
+          {/* 스크래치 질감 필터 */}
           <filter id="goldTexture" x="0%" y="0%" width="100%" height="100%"
                   colorInterpolationFilters="sRGB">
             <feTurbulence type="fractalNoise" baseFrequency="0.65 0.9"
@@ -143,8 +143,8 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
             const revColor   = scratching.get(code);
             const d          = pathGen(feature);
 
-            // 금박 하단 (이미 방문한 색상이 깔려있음)
-            const baseFill   = getRevealedFill(row) ?? '#F5ECD0';
+            // 스크래치 하단 (이미 방문한 색상이 깔려있음)
+            const baseFill   = getRevealedFill(row) ?? '#E5E8ED';
             const baseStroke = getRevealedStroke(row);
 
             // photo badge 위치
@@ -171,7 +171,7 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
                     d={d}
                     fill={isVisited ? 'transparent' : 'url(#goldGradient)'}
                     filter={isVisited ? undefined : 'url(#goldTexture)'}
-                    stroke={isVisited ? 'transparent' : (isHovered ? '#9A7008' : '#C8A020')}
+                    stroke={isVisited ? 'transparent' : (isHovered ? '#6B7280' : '#9CA3AF')}
                     strokeWidth={isHovered ? 1.8 : 0.7}
                     strokeLinejoin="round"
                     opacity={isVisited ? 0 : 1}
@@ -189,7 +189,7 @@ export default function KoreaMap({ visits, onCityClick, userSlot, photoCodes }) 
                     d={d}
                     fill="url(#goldGradient)"
                     filter="url(#scratchReveal)"
-                    stroke="#C8A020"
+                    stroke="#9CA3AF"
                     strokeWidth={0.7}
                     strokeLinejoin="round"
                     className={styles.scratching}
